@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Archivio delle aspettative</title>
+  <style>
+    :root {
+      --bg:#0f0f10;
+      --panel:#111214;
+      --muted:#9aa0a6;
+      --accent:#e6e6e6;
+    }
+    *{box-sizing:border-box;}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:var(--bg);
+      color:var(--accent);
+      -webkit-font-smoothing:antialiased;
+      overflow:hidden;
+    }
+
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:4vh 4vw;
+    }
+
+    .stage{
+      width:100%;
+      max-width:700px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:16px;
+      padding:24px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.6);
+    }
+
+    header h1{margin:0;font-weight:600;font-size:18px;}
+    header p{margin:8px 0 0 0;color:var(--muted);font-size:14px;line-height:1.6;}
+
+    form.input-row{display:flex;gap:8px;margin-top:18px;}
+    .txt{
+      flex:1;
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.08);
+      padding:12px 14px;
+      border-radius:10px;
+      color:var(--accent);
+      font-size:14px;
+      outline:none;
+    }
+    .txt::placeholder{color:rgba(255,255,255,0.25);}
+    .btn{
+      background:linear-gradient(180deg,#2a2a2c,#1f1f21);
+      border:1px solid rgba(255,255,255,0.04);
+      padding:10px 14px;
+      border-radius:10px;
+      color:var(--accent);
+      cursor:pointer;
+      font-weight:600;
+      font-size:14px;
+    }
+    .btn:active{transform:translateY(1px);}
+
+    .archive{
+      position:relative;
+      margin-top:22px;
+      height:420px;
+      border-radius:10px;
+      padding:18px;
+      background:var(--panel);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .chip{
+      position:absolute;
+      left:50%;
+      top:50%;
+      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:13px;
+      color:var(--accent);
+      backdrop-filter:blur(4px);
+      border:1px solid rgba(255,255,255,0.03);
+      box-shadow:0 6px 20px rgba(0,0,0,0.5);
+      pointer-events:none;
+      opacity:0.9;
+      white-space:nowrap;
+      animation: float infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0% { transform: translate(var(--xStart), var(--yStart)) scale(var(--scale)); }
+      50% { transform: translate(var(--xMid), var(--yMid)) scale(calc(var(--scale) * 1.05)); }
+      100% { transform: translate(var(--xEnd), var(--yEnd)) scale(var(--scale)); }
+    }
+
+    .controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;}
+    .muted{color:var(--muted);font-size:13px;}
+    .foot{margin-top:14px;color:var(--muted);font-size:12px;text-align:center;}
+
+    @media (max-width:600px){
+      .stage{padding:16px;box-shadow:none;background:transparent;}
+      header h1{font-size:16px;}
+      header p{font-size:13px;}
+      .archive{height:320px;}
+      .btn{padding:9px 12px;font-size:13px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="stage">
+      <header>
+        <h1>Archivio delle aspettative</h1>
+        <p>
+          Questo spazio raccoglie tutto ciò che ti è statə chiestə di essere.<br>
+          E tutto ciò che ti sei impostə di diventare.<br>
+          Scrivi, osserva, respira.<br>
+          Solo chi depone il peso può continuare a camminare.
+        </p>
+      </header>
+
+      <form id="form" class="input-row" autocomplete="off">
+        <input id="text" class="txt" placeholder="Scrivi un'aspettativa..." />
+        <button class="btn">Invia</button>
+      </form>
+
+      <div class="archive" id="archive"></div>
+
+      <div class="controls">
+        <div class="muted" id="count">0 aspettative</div>
+        <button class="btn" id="clear">Svuota</button>
+      </div>
+
+      <div class="foot">Questo archivio vive solo finché lo vuou tu.
+        <br> Prenditi il tuo tempo.</div>
+    </main>
+  </div>
+
+  <script>
+    const LS_KEY = 'archivio_aspettative_v6';
+    const archiveEl = document.getElementById('archive');
+    const form = document.getElementById('form');
+    const input = document.getElementById('text');
+    const countEl = document.getElementById('count');
+    const clearBtn = document.getElementById('clear');
+
+    let items = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+
+    function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
+    function updateCount(){ countEl.textContent = items.length + (items.length === 1 ? ' aspettativa' : ' aspettative'); }
+
+    function clean(text){ return text.replace(/</g,'&lt;').replace(/>/g,'&gt;').trim().slice(0,200); }
+
+    function randomFloat(min,max){ return (Math.random()*(max-min)+min).toFixed(2)+'%'; }
+
+    function createChipEl(text){
+      const el = document.createElement('div');
+      el.className = 'chip';
+      el.innerHTML = text;
+      const scale = (Math.random()*0.3 + 0.8).toFixed(2);
+      el.style.setProperty('--scale', scale);
+      el.style.setProperty('--xStart', randomFloat(-40,40));
+      el.style.setProperty('--yStart', randomFloat(-40,40));
+      el.style.setProperty('--xMid', randomFloat(-60,60));
+      el.style.setProperty('--yMid', randomFloat(-60,60));
+      el.style.setProperty('--xEnd', randomFloat(-40,40));
+      el.style.setProperty('--yEnd', randomFloat(-40,40));
+      el.style.animationDuration = (Math.random()*10 + 10).toFixed(1) + 's';
+      el.style.left = (Math.random()*90 + 5) + '%';
+      el.style.top = (Math.random()*85 + 5) + '%';
+      return el;
+    }
+
+    // Rende iniziali (solo al primo caricamento)
+    function renderInitial(){
+      archiveEl.innerHTML = '';
+      items.forEach(item => archiveEl.appendChild(createChipEl(item.text)));
+      updateCount();
+    }
+
+    // Aggiunge una nuova aspettativa senza ricreare tutto
+    function addExpectation(text){
+      const cleaned = clean(text);
+      if(!cleaned) return;
+      const newItem = {text: cleaned, ts: Date.now()};
+      items.push(newItem);
+      if(items.length > 400) items = items.slice(items.length - 400);
+      save();
+      const chip = createChipEl(newItem.text);
+      archiveEl.appendChild(chip);
+      updateCount();
+    }
+
+    form.addEventListener('submit', e=>{
+      e.preventDefault();
+      addExpectation(input.value);
+      input.value = '';
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      if(confirm('Sei prontə a camminare?')){
+        items = [];
+        save();
+        archiveEl.innerHTML = '';
+        updateCount();
+      }
+    });
+
+    renderInitial();
+  </script>
+</body>
+</html>
