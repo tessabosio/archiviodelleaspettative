@@ -77,28 +77,33 @@
       border:1px solid rgba(255,255,255,0.02);
     }
 
-    .chip{
-      position:absolute;
-      left:50%;
-      top:50%;
-      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      padding:8px 12px;
-      border-radius:999px;
-      font-size:13px;
-      color:var(--accent);
-      backdrop-filter:blur(4px);
-      border:1px solid rgba(255,255,255,0.03);
-      box-shadow:0 6px 20px rgba(0,0,0,0.5);
-      pointer-events:none;
-      opacity:0.9;
-      white-space:nowrap;
+    .chip {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--accent);
+      border: 1px solid rgba(255,255,255,0.05);
+      pointer-events: none;
+      opacity: 0.9;
+      white-space: nowrap;
       animation: float infinite ease-in-out;
+      will-change: transform; /* GPU rendering */
     }
 
     @keyframes float {
-      0% { transform: translate(var(--xStart), var(--yStart)) scale(var(--scale)); }
-      50% { transform: translate(var(--xMid), var(--yMid)) scale(calc(var(--scale) * 1.05)); }
-      100% { transform: translate(var(--xEnd), var(--yEnd)) scale(var(--scale)); }
+      0% {
+        transform: translate3d(var(--xStart), var(--yStart), 0) scale(var(--scale));
+      }
+      50% {
+        transform: translate3d(var(--xMid), var(--yMid), 0) scale(calc(var(--scale) * 1.05));
+      }
+      100% {
+        transform: translate3d(var(--xEnd), var(--yEnd), 0) scale(var(--scale));
+      }
     }
 
     .controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;}
@@ -139,13 +144,14 @@
         <button class="btn" id="clear">Svuota</button>
       </div>
 
-      <div class="foot">Questo archivio vive solo finché lo vuou tu.
-        <br> Prenditi il tuo tempo.</div>
+      <div class="foot">
+        Questo archivio vive solo finché lo vuoi tu.<br>Prenditi il tuo tempo.
+      </div>
     </main>
   </div>
 
   <script>
-    const LS_KEY = 'archivio_aspettative_v6';
+    const LS_KEY = 'archivio_aspettative_v7';
     const archiveEl = document.getElementById('archive');
     const form = document.getElementById('form');
     const input = document.getElementById('text');
@@ -161,32 +167,41 @@
 
     function randomFloat(min,max){ return (Math.random()*(max-min)+min).toFixed(2)+'%'; }
 
-    function createChipEl(text){
+    // versione ottimizzata per non uscire e non scattare
+    function createChipEl(text) {
       const el = document.createElement('div');
       el.className = 'chip';
       el.innerHTML = text;
-      const scale = (Math.random()*0.3 + 0.8).toFixed(2);
+
+      const scale = (Math.random() * 0.3 + 0.8).toFixed(2);
       el.style.setProperty('--scale', scale);
-      el.style.setProperty('--xStart', randomFloat(-40,40));
-      el.style.setProperty('--yStart', randomFloat(-40,40));
-      el.style.setProperty('--xMid', randomFloat(-60,60));
-      el.style.setProperty('--yMid', randomFloat(-60,60));
-      el.style.setProperty('--xEnd', randomFloat(-40,40));
-      el.style.setProperty('--yEnd', randomFloat(-40,40));
-      el.style.animationDuration = (Math.random()*10 + 10).toFixed(1) + 's';
-      el.style.left = (Math.random()*90 + 5) + '%';
-      el.style.top = (Math.random()*85 + 5) + '%';
+
+      const range = 25; // movimenti più controllati
+      const midRange = 35;
+
+      function rand(min, max) {
+        return (Math.random() * (max - min) + min).toFixed(1) + '%';
+      }
+
+      el.style.setProperty('--xStart', rand(-range, range));
+      el.style.setProperty('--yStart', rand(-range, range));
+      el.style.setProperty('--xMid', rand(-midRange, midRange));
+      el.style.setProperty('--yMid', rand(-midRange, midRange));
+      el.style.setProperty('--xEnd', rand(-range, range));
+      el.style.setProperty('--yEnd', rand(-range, range));
+
+      el.style.animationDuration = (Math.random() * 10 + 12).toFixed(1) + 's';
+      el.style.left = (Math.random() * 80 + 10) + '%';
+      el.style.top = (Math.random() * 75 + 10) + '%';
       return el;
     }
 
-    // Rende iniziali (solo al primo caricamento)
     function renderInitial(){
       archiveEl.innerHTML = '';
       items.forEach(item => archiveEl.appendChild(createChipEl(item.text)));
       updateCount();
     }
 
-    // Aggiunge una nuova aspettativa senza ricreare tutto
     function addExpectation(text){
       const cleaned = clean(text);
       if(!cleaned) return;
