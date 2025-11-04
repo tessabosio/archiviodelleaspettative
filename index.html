@@ -106,8 +106,12 @@
       }
     }
 
-    .controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;}
-    .muted{color:var(--muted);font-size:13px;}
+    .controls{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:12px;
+    }
+
     .foot{margin-top:14px;color:var(--muted);font-size:12px;text-align:center;}
 
     @media (max-width:600px){
@@ -127,7 +131,7 @@
         <p>
           Questo spazio raccoglie tutto ciò che ti è statə chiestə di essere.<br>
           E tutto ciò che ti sei impostə di diventare.<br>
-          Se vuoi, se te la senti, scrivi qualcosa.<br>
+          Scrivi, osserva, respira.<br>
           Quando sei prontə, svuota l'archivio.<br>
           Solo chi depone il peso può continuare a camminare.
         </p>
@@ -141,7 +145,6 @@
       <div class="archive" id="archive"></div>
 
       <div class="controls">
-        <div class="muted" id="count">0 aspettative</div>
         <button class="btn" id="clear">Svuota</button>
       </div>
 
@@ -152,23 +155,18 @@
   </div>
 
   <script>
-    const LS_KEY = 'archivio_aspettative_v7';
+    const LS_KEY = 'archivio_aspettative_v8';
     const archiveEl = document.getElementById('archive');
     const form = document.getElementById('form');
     const input = document.getElementById('text');
-    const countEl = document.getElementById('count');
     const clearBtn = document.getElementById('clear');
 
     let items = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
 
     function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
-    function updateCount(){ countEl.textContent = items.length + (items.length === 1 ? ' aspettativa' : ' aspettative'); }
-
     function clean(text){ return text.replace(/</g,'&lt;').replace(/>/g,'&gt;').trim().slice(0,200); }
 
-    function randomFloat(min,max){ return (Math.random()*(max-min)+min).toFixed(2)+'%'; }
-
-    // versione ottimizzata per non uscire e non scattare
+    // movimento dolce e limitato per non uscire dai bordi
     function createChipEl(text) {
       const el = document.createElement('div');
       el.className = 'chip';
@@ -177,9 +175,8 @@
       const scale = (Math.random() * 0.3 + 0.8).toFixed(2);
       el.style.setProperty('--scale', scale);
 
-      const range = 25; // movimenti più controllati
+      const range = 25;
       const midRange = 35;
-
       function rand(min, max) {
         return (Math.random() * (max - min) + min).toFixed(1) + '%';
       }
@@ -200,7 +197,6 @@
     function renderInitial(){
       archiveEl.innerHTML = '';
       items.forEach(item => archiveEl.appendChild(createChipEl(item.text)));
-      updateCount();
     }
 
     function addExpectation(text){
@@ -210,9 +206,7 @@
       items.push(newItem);
       if(items.length > 400) items = items.slice(items.length - 400);
       save();
-      const chip = createChipEl(newItem.text);
-      archiveEl.appendChild(chip);
-      updateCount();
+      archiveEl.appendChild(createChipEl(newItem.text));
     }
 
     form.addEventListener('submit', e=>{
@@ -226,7 +220,6 @@
         items = [];
         save();
         archiveEl.innerHTML = '';
-        updateCount();
       }
     });
 
